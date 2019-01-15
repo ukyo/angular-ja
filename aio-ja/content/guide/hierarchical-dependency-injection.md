@@ -126,135 +126,135 @@ NgModuleがそれを使用しない場合、
 
 ### @Componentレベルのインジェクター
 
-Individual components within an NgModule have their own injectors.
-You can limit the scope of a provider to a component and its children
-by configuring the provider at the component level using the `@Component` metadata.
+NgModule内の個々のコンポーネントには自身のインジェクターを持ちます。
+`@Component`メタデータを使ってコンポーネントレベルでプロバイダーを設定することによって、
+プロバイダーの範囲をコンポーネントとその子に制限できます。
 
-The following example is a revised `HeroesComponent` that specifies `HeroService` in its `providers` array. `HeroService` can provide heroes to instances of this component, or to any child component instances. 
+次の例は、`providers`配列で`HeroService`を指定するように`HeroesComponent`を修正したものです。`HeroService`はこのコンポーネントのインスタンス、または任意の子コンポーネントのインスタンスにヒーローたちを提供することができます。
 
 <code-example path="dependency-injection/src/app/heroes/heroes.component.1.ts" header="src/app/heroes/heroes.component.ts" linenums="false">
 </code-example>
 
-### Element injectors
+### 要素インジェクター
 
-An injector does not actually belong to a component, but rather to the component instance's anchor element in the DOM. A different component instance on a different DOM element uses a different injector.
+インジェクターは実際にはコンポーネントに属しているのではなく、DOM内のコンポーネントインスタンスのアンカー要素に属しています 異なるDOM要素の異なるコンポーネントインスタンスは、異なるインジェクターを使用します。
 
-Components are a special type of directive, and the `providers` property of
-`@Component()` is inherited from `@Directive()`. 
-Directives can also have dependencies, and you can configure providers
-in their `@Directive()` metadata. 
-When you configure a provider for a component or directive using the `providers` property, that provider belongs to the injector for the anchor DOM element. Components and directives on the same element share an injector.
+コンポーネントは特別な種類のディレクティブであり、
+`@Component`の`providers`プロパティは`@Directive()`から継承されます。
+それらの`@Directive()`メタデータに、
+ディレクティブも依存関係を持つことができ、プロバイダーを設定できます
+`providers`プロパティを使ってコンポーネントやディレクティブのプロバイダを設定するとき、そのプロバイダーはアンカーDOM要素のインジェクターに属します。同じ要素のコンポーネントとディレクティブはインジェクターを共有します。
 
 <!--- TBD with examples
 * For an example of how this works, see [Element-level providers](guide/dependency-injection-in-action#directive-level-providers).
 --->
 
-* Learn more about [Element Injectors in Angular](https://blog.angularindepth.com/a-curios-case-of-the-host-decorator-and-element-injectors-in-angular-582562abcf0a).
+* [Angularの要素インジェクター](https://blog.angularindepth.com/a-curios-case-of-the-host-decorator-and-element-injectors-in-angular-582562abcf0a)についてさらに学びましょう。
 
 
 
 ## インジェクターバブリング
 
-Consider this guide's variation on the Tour of Heroes application.
-At the top is the `AppComponent` which has some subcomponents, such as the `HeroesListComponent`.
-The `HeroesListComponent` holds and manages multiple instances of the `HeroTaxReturnComponent`.
-The following diagram represents the state of this three-level component tree when there are three instances of `HeroTaxReturnComponent` open simultaneously.
+このガイドのツアー・オブ・ヒーローズアプリケーションに関するバリエーションについて考察してみましょう。
+一番上にあるのは`HeroesListComponent`のようないくつかのサブコンポーネントを持つ`AppComponent`です。
+`HeroesListComponent`は`HeroTaxReturnComponent`の複数のインスタンスを保持し管理します。
+次の図は3つの`HeroTaxReturnComponent`インスタンスが同時に開いているときのこの3階層のコンポーネントツリーの状態を表しています。
 
 <figure>
   <img src="generated/images/guide/dependency-injection/component-hierarchy.png" alt="injector tree">
 </figure>
 
-When a component requests a dependency, Angular tries to satisfy that dependency with a provider registered in that component's own injector.
-If the component's injector lacks the provider, it passes the request up to its parent component's injector.
-If that injector can't satisfy the request, it passes the request along to the next parent injector up the tree.
-The requests keep bubbling up until Angular finds an injector that can handle the request or runs out of ancestor injectors.
-If it runs out of ancestors, Angular throws an error. 
+コンポーネントが依存関係を要求すると、Angularはそのコンポーネント自身のインジェクターに登録されているプロバイダーでその依存関係を満たそうとします。
+コンポーネントのインジェクターにプロバイダーがない場合は、リクエストをその親コンポーネントのインジェクターに渡します。
+そのインジェクターが要求を満たすことができない場合は、ツリーの上の次の親インジェクターに要求を渡します。
+Angularがリクエストを処理できるインジェクターを見つけるまで、または先祖インジェクターがなくなるまで、リクエストはバブリングを続けます。
+先祖がなくなると、Angularはエラーをスローします。
 
-If you have registered a provider for the same DI token at different levels, the first one Angular encounters is the one it uses to provide the dependency. If, for example, a provider is registered locally in the component that needs a service, Angular doesn't look for another provider of the same service.  
+異なるレベルで同じDIトークンのプロバイダを登録した場合、Angularが最初に遭遇するのが依存関係を提供するために使用するプロバイダです。たとえば、プロバイダーがサービスを必要とするコンポーネントにローカルに登録されている場合、Angularは同じサービスの別のプロバイダーを探しません。
 
 
 <div class="alert is-helpful">
 
-You can cap the bubbling by adding the `@Host()` parameter decorator on the dependant-service parameter
-in a component's constructor. 
-The hunt for providers stops at the injector for the host element of the component. 
+コンポーネントのコンストラクタ内の依存するサービスのパラメータに
+`@Host()`パラメータデコレーターを追加することでバブリングを抑えることができます。
+プロバイダーの探索は、コンポーネントのホスト要素のインジェクターで停止します。
 
-* See an [example](guide/dependency-injection-in-action#qualify-dependency-lookup) of using `@Host` together with `@Optional`, another parameter decorator that lets you handle the null case if no provider is found.
+* `@Host`とともに、プロバイダが見つからない場合にnullケースを処理できるようにする別のパラメータデコレータの`@Optional`を使用している[例](guide/dependency-injection-in-action#qualify-dependency-lookup)を参照してください。
 
-* Learn more about the [`@Host` decorator and Element Injectors](https://blog.angularindepth.com/a-curios-case-of-the-host-decorator-and-element-injectors-in-angular-582562abcf0a).
+* [`@Host`デコレーターと要素インジェクター](https://blog.angularindepth.com/a-curios-case-of-the-host-decorator-and-element-injectors-in-angular-582562abcf0a)についてさらに学びましょう。
 
 </div>
 
-If you only register providers with the root injector at the top level (typically the root `AppModule`), the tree of injectors appears to be flat.
-All requests bubble up to the root injector, whether you configured it with the `bootstrapModule` method, or registered all providers with `root` in their own services.
+プロバイダを最上位(通常はルートのAppModule)でルートインジェクターに登録するだけでは、インジェクターのツリーはフラットに見えます。
+`bootstrapModule`メソッドで設定したか、自身のサービスで全てのプロバイダーを` root`で登録したかに関わらず、全てのリクエストはルートインジェクターにバブルアップします。
 
 {@a component-injectors}
 
 ## コンポーネントインジェクター
 
-The ability to configure one or more providers at different levels opens up interesting and useful possibilities.
-The guide sample offers some scenarios where you might want to do so.
+さまざまなレベルで1つ以上のプロバイダを設定する機能により、興味深く有用な可能性が生まれます。
+ガイドサンプルでは、必要に応じていくつかのシナリオを説明します。
 
 ### シナリオ: サービスの隔離
 
-Architectural reasons may lead you to restrict access to a service to the application domain where it belongs. 
-For example, the guide sample includes a `VillainsListComponent` that displays a list of villains.
-It gets those villains from a `VillainsService`.
+アーキテクチャ上の理由から、サービスへのアクセスをそのサービスが属するアプリケーションドメインに制限する可能性があります。
+例えば、ガイドサンプルは悪役のリストを表示する`VillainsListComponent`を含みます。
+それはそれらの悪役を`VillainsService`から取得します。
 
-If you provide `VillainsService` in the root `AppModule` (where you registered the `HeroesService`),
-that would make the `VillainsService` available everywhere in the application, including the _Hero_ workflows. If you later modified the `VillainsService`, you could break something in a hero component somewhere. Providing the service in the root `AppModule` creates that risk.
+`VillainsService`をルートの`AppModule`(あなたが`HeroesService`を登録した場所)に指定した場合、
+これは_Hero_ワークフローを含めて`VillainsService`をアプリケーションのいたるところで利用可能にします。後で `VillainsService`を修正した場合、どこかのヒーローコンポーネントの中で何かを壊すことができます。ルートのAppModuleにサービスを提供することはその危険性を生み出します。
 
-Instead, you can provide the `VillainsService` in the `providers` metadata of the `VillainsListComponent` like this:
+代わりに、`VillainsListComponent`の`providers`メタデータで `VillainsService`を次のように提供することができます:
 
 
 <code-example path="hierarchical-dependency-injection/src/app/villains-list.component.ts" linenums="false" header="src/app/villains-list.component.ts (metadata)" region="metadata">
 
 </code-example>
 
-By providing `VillainsService` in the `VillainsListComponent` metadata and nowhere else,
-the service becomes available only in the `VillainsListComponent` and its sub-component tree.
-It's still a singleton, but it's a singleton that exist solely in the _villain_ domain.
+`VillainsListComponent`メタデータで`VillainsService`を提供し、それ以外の場所では提供しません。
+このサービスは`VillainsListComponent`とそのサブコンポーネントツリーでのみ利用可能になります。
+まだシングルトンですが、_villain_ドメインにのみ存在するシングルトンです。
 
-Now you know that a hero component can't access it. You've reduced your exposure to error.
+これで、主人公のコンポーネントがアクセスできないことがわかりました。 あなたはエラーへの露出を減らしました。
 
 ### シナリオ: 複数の編集セッション
 
-Many applications allow users to work on several open tasks at the same time.
-For example, in a tax preparation application, the preparer could be working on several tax returns,
-switching from one to the other throughout the day.
+多くのアプリケーションでは、ユーザーは複数の未解決タスクを同時に処理できます。
+たとえば、納税申告アプリケーションでは、作成者は複数の納税申告書を作成し、
+1日を通して納税申告書を切り替えることができます。
 
-This guide demonstrates that scenario with an example in the Tour of Heroes theme.
-Imagine an outer `HeroListComponent` that displays a list of super heroes.
+このガイドでは、そのシナリオをツアー・オブ・ヒーローズのテーマの例で説明します。
+スーパーヒーローのリストを表示する外側の`HeroListComponent`を想像してください。
 
-To open a hero's tax return, the preparer clicks on a hero name, which opens a component for editing that return.
-Each selected hero tax return opens in its own component and multiple returns can be open at the same time.
+主人公の確定申告を開くには、作成者は主人公の名前をクリックします。これにより、その申告を編集するためのコンポーネントが開きます。
+選択された各ヒーロー納税申告書はそれぞれの構成要素で開き、複数の申告書を同時に開くことができます。
 
-Each tax return component has the following characteristics:
+各納税申告コンポーネントには以下の特性があります。
 
-* Is its own tax return editing session.
-* Can change a tax return without affecting a return in another component.
-* Has the ability to save the changes to its tax return or cancel them.
+* 独自の納税申告編集会です。
+* 他の構成要素での申告に影響を与えずに確定申告を変更することができます。
+* その納税申告書への変更を保存したり、それらをキャンセルすることができます。
 
 
 <figure>
   <img src="generated/images/guide/dependency-injection/hid-heroes-anim.gif" alt="Heroes in action">
 </figure>
 
-Suppose that the `HeroTaxReturnComponent` has logic to manage and restore changes.
-That would be a pretty easy task for a simple hero tax return.
-In the real world, with a rich tax return data model, the change management would be tricky.
-You could delegate that management to a helper service, as this example does.
+`HeroTaxReturnComponent`に変更を管理し復元するロジックがあるとします。
+それは単純なヒーローの納税申告書のためのかなり簡単な仕事でしょう。
+現実の世界では、豊富な納税申告データモデルを使用しているため、変更管理には注意が必要です。
+この例のように、その管理をヘルパーサービスに委任することができます。
 
-Here is the `HeroTaxReturnService`.
-It caches a single `HeroTaxReturn`, tracks changes to that return, and can save or restore it.
-It also delegates to the application-wide singleton `HeroService`, which it gets by injection.
+これが`HeroTaxReturnService`です。
+それは単一の`HeroTaxReturn`をキャッシュし、その戻りに対する変更を監視し、それを保存または復元することができます。
+また、インジェクションによって取得されるアプリケーション全体のシングルトン `HeroService`に委任します。
 
 
 <code-example path="hierarchical-dependency-injection/src/app/hero-tax-return.service.ts" header="src/app/hero-tax-return.service.ts">
 
 </code-example>
 
-Here is the `HeroTaxReturnComponent` that makes use of it.
+これを使用している`HeroTaxReturnComponent`は次のようになります。
 
 
 <code-example path="hierarchical-dependency-injection/src/app/hero-tax-return.component.ts" header="src/app/hero-tax-return.component.ts">
@@ -262,31 +262,31 @@ Here is the `HeroTaxReturnComponent` that makes use of it.
 </code-example>
 
 
-The _tax-return-to-edit_ arrives via the input property which is implemented with getters and setters.
-The setter initializes the component's own instance of the `HeroTaxReturnService` with the incoming return.
-The getter always returns what that service says is the current state of the hero.
-The component also asks the service to save and restore this tax return.
+_tax-return-to-edit_は、ゲッターとセッターで実装されているinputプロパティを介して到着します。
+セッターはコンポーネント自身の`HeroTaxReturnService`のインスタンスを入ってくるリターンで初期化します。
+ゲッターは、そのサービスが言うことが常に主人公の現在の状態であることを返します。
+コンポーネントはまた、この納税申告書を保存および復元するようにサービスに要求します。
 
-This won't work if the service is an application-wide singleton.
-Every component would share the same service instance, and each component would overwrite the tax return that belonged to another hero.
+サービスがアプリケーション全体のシングルトンの場合、これは機能しません。
+各コンポーネントは同じサービスインスタンスを共有し、各コンポーネントは別のヒーローに属する納税申告書を上書きします。
 
-To prevent this, we configure the component-level injector of `HeroTaxReturnComponent` to provide the service, using the  `providers` property in the component metadata.
+これを防ぐために、コンポーネントメタデータの`providers`プロパティを使って、サービスを提供するように`HeroTaxReturnComponent`のコンポーネントレベルのインジェクターを設定します。
 
 
 <code-example path="hierarchical-dependency-injection/src/app/hero-tax-return.component.ts" linenums="false" header="src/app/hero-tax-return.component.ts (providers)" region="providers">
 
 </code-example>
 
-The `HeroTaxReturnComponent` has its own provider of the `HeroTaxReturnService`.
-Recall that every component _instance_ has its own injector.
-Providing the service at the component level ensures that _every_ instance of the component gets its own, private instance of the service, and no tax return gets overwritten.
+`HeroTaxReturnComponent`は`HeroTaxReturnService`の独自のプロバイダーを持っています。
+すべてのコンポーネント_インスタンス_には独自のインジェクタがあります。
+コンポーネントレベルでサービスを提供することで、コンポーネントのすべてのインスタンスが独自のサービスのプライベートインスタンスを取得し、確定申告が上書きされることがなくなります。
 
 
 <div class="alert is-helpful">
 
 
-The rest of the scenario code relies on other Angular features and techniques that you can learn about elsewhere in the documentation.
-You can review it and download it from the <live-example></live-example>.
+シナリオコードの残りの部分は、ドキュメントの他の部分で学ぶことができる他のAngularの機能とテクニックに依存しています。
+あなたはそれを確認し、<live-example></live-example>からそれをダウンロードすることができます。
 
 
 </div>
@@ -295,29 +295,30 @@ You can review it and download it from the <live-example></live-example>.
 
 ### シナリオ: 特別なプロバイダー
 
-Another reason to re-provide a service at another level is to substitute a _more specialized_ implementation of that service, deeper in the component tree.
+別のレベルでサービスを再提供するもう1つの理由は、そのサービスのより専門的な実装をコンポーネントツリーのより深いところに置き換えることです。
 
-Consider a Car component that depends on several services.
-Suppose you configured the root injector (marked as A) with _generic_ providers for
-`CarService`, `EngineService` and `TiresService`.
+いくつかのサービスに依存するCarコンポーネントを考えます。
+ルートインジェクター(Aとマークされている)に`CarService`、
+`EngineService`、および `TiresService`という_ジェネリック_プロバイダーを設定したとします。
 
-You create a car component (A) that displays a car constructed from these three generic services.
+これら3つの汎用サービスから構築された自動車を表示する自動車コンポーネント(A)を作成します。
 
-Then you create a child component (B) that defines its own, _specialized_ providers for `CarService` and `EngineService`
-that have special capabilities suitable for whatever is going on in component (B).
+それから `CarService`と` EngineService`のためのそれ自身の_特別な_プロバイダーを定義する子コンポーネント(B)を作成します
+それはコンポーネント(B)で起こっていることすべてに適した特別な能力を持っています。
 
-Component (B) is the parent of another component (C) that defines its own, even _more specialized_ provider for `CarService`.
+コンポーネント(B)は`CarService`のためのそれ自身の、さらに専門化されたプロバイダーさえも定義する別のコンポーネント(C)の親です。
 
 
 <figure>
   <img src="generated/images/guide/dependency-injection/car-components.png" alt="car components">
 </figure>
 
-Behind the scenes, each component sets up its own injector with zero, one, or more providers defined for that component itself.
+舞台裏では、各コンポーネントは、そのコンポーネント自体に対して定義された0、1、または複数のプロバイダーを使用して各自のインジェクタを設定します。
 
-When you resolve an instance of `Car` at the deepest component (C),
-its injector produces an instance of `Car` resolved by injector (C) with an `Engine` resolved by injector (B) and
-`Tires` resolved by the root injector (A).
+最も深い部分(C)で`Car`のインスタンスを解決するとき、
+そのインジェクターは`Engine`はインジェクター(B)によって解決され、
+そして`Tires`はルートインジェクター(A)によって解決され、インジェクター(C)によって解決された`Car'のインスタンスを生成します。
+
 
 
 <figure>
@@ -329,7 +330,7 @@ its injector produces an instance of `Car` resolved by injector (C) with an `Eng
 <div class="alert is-helpful">
 
 
-The code for this _cars_ scenario is in the `car.components.ts` and `car.services.ts` files of the sample
-which you can review and download from the <live-example></live-example>.
+この_cars_シナリオのコードはサンプルの`car.components.ts`と` car.services.ts`ファイルにあります。
+<live-example></live-example>から確認してダウンロードできます。
 
 </div>
